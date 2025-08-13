@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avaliação de Filtros de Água</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <!-- Adicionada biblioteca JSZip para compactação -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f7fa;
+            color: #212529;
+        }
+
+        .tab-button {
+            position: relative;
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            color: #64748b;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button:hover {
+            color: #3b82f6;
+        }
+
+        .tab-button.active {
+            color: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .padrao-ok {
+            color: #16a34a;
+            background-color: rgba(22, 163, 74, 0.1);
+        }
+
+        .fora-padrao {
+            color: #ef4444;
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        input.padrao-ok {
+            color: #16a34a !important;
+            border-color: #16a34a !important;
+            background-color: rgba(74, 222, 128, 0.05);
+        }
+
+        input.fora-padrao {
+            color: #ef4444 !important;
+            border-color: #ef4444 !important;
+            background-color: rgba(239, 68, 68, 0.05);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-4 sm:p-6">
+    <div class="w-full max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-filter text-blue-500 mr-2"></i> Dashboard de Avaliação de Filtros
+            </h1>
+            <p class="text-gray-600 text-lg">Monitoramento e análise de desempenho de filtros de água</p>
+        </div>
+
+        <!-- Main Container -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <!-- Tab Navigation -->
+            <div class="border-b border-gray-200">
+                <nav class="flex justify-center sm:justify-center overflow-x-auto">
+                    <button id="tab-btn-configuracao" class="tab-button active">
+                        <i class="fas fa-cog mr-2"></i> Configuração
+                    </button>
+                    <button id="tab-btn-velocidade" class="tab-button">
+                        <i class="fas fa-tachometer-alt mr-2"></i> Velocidade
+                    </button>
+                    <button id="tab-btn-turbidez" class="tab-button">
+                        <i class="fas fa-water mr-2"></i> Turbidez
+                    </button>
+                    <button id="tab-btn-relatorios" class="tab-button">
+                        <i class="fas fa-file-alt mr-2"></i> Relatórios
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <main class="p-6 sm:p-8">
+                <!-- Configuração Section -->
+                <div id="configuracao" class="tab-content space-y-6">
+                    <!-- General Settings Card -->
+                    <div
+                        class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md">
+                        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h2 class="text-xl font-semibold text-gray-800">
+                                <i class="fas fa-file-signature text-blue-500 mr-2"></i> Configurações Gerais
+                            </h2>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="nomeEta" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Nome da ETA <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="nomeEta" placeholder="Insira o nome da ETA"
+                                        class="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none shadow-sm">
+                                </div>
+                                <div>
+                                    <label for="distrito" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Distrito <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="distrito" placeholder="Insira o distrito"
+                                        class="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none shadow-sm">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="respTecnico" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Responsável Técnico <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="respTecnico" placeholder="Insira o nome do responsável"
+                                        class="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none shadow-sm">
+                                </div>
+                                <div>
+                                    <label for="dataAnalise" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Data da Análise <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="date" id="dataAnalise"
+                                        class="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none shadow-sm">
+                                </div>
+                            </div>
+                            <div class="pt-4 border-t">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="text-md font-medium text-gray-700">
+                                        <i class="fas fa-user-shield mr-2 text-blue-500"></i> Técnicos de Análise
+                                    </h4>
+                                    <button id="btn-add-tecnico"
+                                        class="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center">
+                                        <i class="fas fa-plus-circle mr-1"></i> Adicionar Técnico
+                                    </button>
+                                </div>
+                                <div id="tecnicosContainer" class="space-y-3">
+                                    <!-- Campos de técnicos serão inseridos aqui -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters Configuration Card -->
+                    <div
+                        class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md">
+                        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h2 class="text-xl font-semibold text-gray-800">
+                                <i class="fas fa-filter text-blue-500 mr-2"></i> Configuração de Filtros
+                            </h2>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="qtdAscendente" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Quantidade de Filtros Ascendentes
+                                    </label>
+                                    <input type="number" id="qtdAscendente" value="" min="0" placeholder="0"
+                                        class="w-28 text-center px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none shadow-sm">
+                                </div>
+                                <div id="nomesFiltrosAscendenteContainer"></div>
+                            </div>
+
+                            <div class="pt-4 border-t space-y-4">
+                                <div>
+                                    <label for="qtdDescendente" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Quantidade de Filtros Descendentes
+                                    </label>
+                                    <input type="number" id="qtdDescendente" value="" min="0" placeholder="0"
+                                        class="w-28 text-center px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none shadow-sm">
+                                </div>
+                                <div id="nomesFiltrosDescendenteContainer"></div>
+                            </div>
+                            <div class="pt-6 border-t">
+                                <button id="btn-salvar-config"
+                                    class="inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-3 text-lg shadow-lg hover:shadow-xl w-full">
+                                    <i class="fas fa-save mr-2"></i> Salvar Configuração e Gerar Painéis
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions Card -->
+                    <div
+                        class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md">
+                        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h2 class="text-xl font-semibold text-gray-800">
+                                <i class="fas fa-database text-blue-500 mr-2"></i> Ações e Backup
+                            </h2>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <button id="btn-export-json"
+                                    class="inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 bg-gradient-to-r from-green-500 to-green-700 text-white font-bold py-3 shadow-lg hover:shadow-xl">
+                                    <i class="fas fa-file-export mr-2"></i> Exportar Backup
+                                </button>
+                                <button id="btn-import-json"
+                                    class="inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 bg-gradient-to-r from-purple-500 to-purple-700 text-white font-bold py-3 shadow-lg hover:shadow-xl">
+                                    <i class="fas fa-file-import mr-2"></i> Importar Backup
+                                </button>
+                                <input type="file" id="import-json-input" class="hidden" accept=".json">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Content Sections -->
+                <div id="velocidade" class="tab-content hidden"></div>
+                <div id="turbidez" class="tab-content hidden"></div>
+
+                <div id="relatorios" class="tab-content hidden space-y-8">
+                    <!-- Ferramenta de Comparação -->
+                    <div
+                        class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-300 hover:shadow-md">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center"><i
+                                class="fas fa-chart-line mr-2 text-purple-500"></i>Ferramenta de Comparação de Laudos
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">1. Carregar Backups para
+                                    Comparação</label>
+                                <input type="file" id="import-comparacao-input" multiple accept=".json"
+                                    class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                                <div id="loaded-files-list" class="text-xs text-gray-500 mt-2"></div>
+                            </div>
+                            <div id="comparacao-controls" class="hidden space-y-4">
+                                <div>
+                                    <label for="filtro-comparacao-select"
+                                        class="block text-sm font-medium text-gray-700 mb-1">2. Selecione o Filtro para
+                                        Comparar</label>
+                                    <select id="filtro-comparacao-select"
+                                        class="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm focus:ring-2 focus:ring-purple-200 focus:border-purple-500 focus:outline-none shadow-sm"></select>
+                                </div>
+                                <div id="comparacao-results" class="hidden space-y-6">
+                                    <div class="h-80"><canvas id="grafico-comparacao"></canvas></div>
+                                    <div id="tabela-comparacao-container"></div>
+                                    <button id="btn-gerar-laudo-comparativo"
+                                        class="inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 bg-gradient-to-r from-purple-600 to-purple-800 text-white font-bold py-3 text-lg shadow-lg hover:shadow-xl w-full">
+                                        <i class="fas fa-file-pdf mr-2"></i> Gerar PDF Comparativo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Ações em Lote -->
+                    <div
+                        class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-300 hover:shadow-md">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center"><i
+                                class="fas fa-layer-group mr-2 text-red-500"></i>Ações em Lote</h3>
+                        <p class="text-sm text-gray-500 mb-4">Use o botão abaixo para gerar e baixar todos os laudos
+                            configurados de uma só vez em um arquivo ZIP.</p>
+                        <button id="btn-gerar-todos-laudos"
+                            class="inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 bg-gradient-to-r from-red-600 to-red-800 text-white font-bold py-3 text-lg shadow-lg hover:shadow-xl w-full">
+                            <i class="fas fa-file-archive mr-2"></i> Gerar Laudos (ZIP)
+                        </button>
+                    </div>
+                    <!-- Container para os cards individuais dos filtros -->
+                    <div id="relatorios-cards-container"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // IIFE to encapsulate the application logic
+        (function () {
+            // --- STATE AND CONSTANTS ---
+            let config = {
+                eta: '',
+                distrito: '',
+                respTecnico: '',
+                analistas: [],
+                ascendente: [],
+                descendente: [],
+                dataAnalise: ''
+            };
+            let isConfigured = false;
+            const charts = {};
+            let loadedBackups = []; // Para a ferramenta de comparação
+            let comparisonChart = null;
+
+
+            // ABNT Standards
+            const ABNT_STANDARDS = {
+                VELOCIDADE_MIN: 80,
+                VELOCIDADE_MAX: 100,
+                TURBIDEZ_MAX: 0.5,
+                TAXA_FILTRACAO_MIN: 60,
+                TAXA_FILTRACAO_MAX: 180,
+            };
+
+            // --- DOM ELEMENTS ---
+            const tabButtons = {
+                configuracao: document.getElementById('tab-btn-configuracao'),
+                velocidade: document.getElementById('tab-btn-velocidade'),
+                turbidez: document.getElementById('tab-btn-turbidez'),
+                relatorios: document.getElementById('tab-btn-relatorios'),
+            };
+
+            const tabContents = {
+                configuracao: document.getElementById('configuracao'),
+                velocidade: document.getElementById('velocidade'),
+                turbidez: document.getElementById('turbidez'),
+                relatorios: document.getElementById('relatorios'),
+            };
+
+            // --- INITIALIZATION ---
+            document.addEventListener('DOMContentLoaded', () => {
+                initializeEventListeners();
+                document.getElementById('dataAnalise').valueAsDate = new Date();
+                adicionarTecnico(false, "");
+                gerarCamposNomes('Ascendente');
+                gerarCamposNomes('Descendente');
+                changeTab('configuracao');
+            });
+
+            // --- EVENT LISTENERS ---
+            function initializeEventListeners() {
+                Object.keys(tabButtons).forEach(key => {
+                    tabButtons[key].addEventListener('click', () => changeTab(key));
+                });
+                document.getElementById('btn-add-tecnico').addEventListener('click', () => adicionarTecnico(true));
+                document.getElementById('qtdAscendente').addEventListener('input', () => gerarCamposNomes('Ascendente'));
+                document.getElementById('qtdDescendente').addEventListener('input', () => gerarCamposNomes('Descendente'));
+                document.getElementById('btn-salvar-config').addEventListener('click', salvarConfiguracao);
+                document.getElementById('btn-export-json').addEventListener('click', exportarJSON);
+                document.getElementById('btn-import-json').addEventListener('click', () => document.getElementById('import-json-input').click());
+                document.getElementById('import-json-input').addEventListener('change', importarJSON);
+                document.getElementById('btn-gerar-todos-laudos').addEventListener('click', gerarTodosOsLaudos);
+                document.getElementById('import-comparacao-input').addEventListener('change', handleComparisonFileUpload);
+                document.getElementById('filtro-comparacao-select').addEventListener('change', displayComparison);
+                document.getElementById('btn-gerar-laudo-comparativo').addEventListener('click', gerarLaudoComparativoPDF);
+            }
+
+            // --- TAB MANAGEMENT ---
+            function changeTab(tabId) {
+                if (['velocidade', 'turbidez', 'relatorios'].includes(tabId) && !isConfigured) {
+                    showNotification('error', 'Antes de acessar, configure os dados dos filtros!');
+                    return;
+                }
+                Object.values(tabContents).forEach(tab => tab.classList.add('hidden'));
+                tabContents[tabId].classList.remove('hidden');
+                Object.values(tabButtons).forEach(button => button.classList.remove('active'));
+                tabButtons[tabId].classList.add('active');
+                if (tabId === 'turbidez') {
+                    setTimeout(() => {
+                        config.ascendente.forEach((_, i) => atualizarGraficosTurbidez('Asc', i));
+                        config.descendente.forEach((_, i) => atualizarGraficosTurbidez('Desc', i));
+                    }, 100);
+                }
+            }
+
+            // --- UI GENERATION ---
+            function gerarCamposNomes(tipo) {
+                const containerId = `nomesFiltros${tipo}Container`;
+                const quantidade = parseInt(document.getElementById(`qtd${tipo}`).value) || 0;
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+
+                if (quantidade > 0) {
+                    const title = document.createElement('h4');
+                    title.className = 'text-md font-medium text-gray-600 mt-3 mb-2';
+                    title.innerHTML = `<i class="fas ${tipo === 'Ascendente' ? 'fa-arrow-up' : 'fa-arrow-down'} mr-2 text-blue-500"></i> Nomes dos Filtros ${tipo === 'Ascendente' ? 'Ascendentes' : 'Descendentes'}`;
+                    container.appendChild(title);
+                }
+                const prefixo = tipo === 'Ascendente' ? 'A' : 'D';
+                for (let i = 0; i < quantidade; i++) {
+                    const nomeSugerido = `Filtro ${prefixo}${i + 1}`;
+                    const div = document.createElement('div');
+                    div.className = 'pl-4 mb-3';
+                    div.innerHTML = `
+                        <label for="nome_${tipo}_${i}" class="block text-sm font-medium text-gray-500 mb-1">${nomeSugerido}</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="text" id="nome_${tipo}_${i}" placeholder="${nomeSugerido}" value="${nomeSugerido}" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none shadow-sm flex-1">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tipo === 'Ascendente' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">${tipo}</span>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                }
+            }
+
+            function adicionarTecnico(salvar = false, nome = "") {
+                const container = document.getElementById('tecnicosContainer');
+                const div = document.createElement('div');
+                div.className = 'flex items-center space-x-2';
+                div.innerHTML = `
+                    <input type="text" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none shadow-sm tecnico-analise flex-1" placeholder="Nome do Analista" value="${nome}">
+                    <button class="text-gray-400 hover:text-red-500 transition-colors duration-200 font-bold text-lg" title="Remover técnico">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                `;
+                div.querySelector('button').addEventListener('click', function () { this.parentElement.remove(); });
+                container.appendChild(div);
+            }
+
+            function gerarEstruturaPaineis(dadosFiltros = null) {
+                const totalFiltros = config.ascendente.length + config.descendente.length;
+                const gridClass = totalFiltros === 1 ? 'flex justify-center' : 'grid grid-cols-1 lg:grid-cols-2 gap-6';
+
+                tabContents.velocidade.innerHTML = `<div class="${gridClass}"></div>`;
+                tabContents.turbidez.innerHTML = `<div class="${gridClass}"></div>`;
+
+                const relatoriosContainer = document.getElementById('relatorios-cards-container');
+                if (relatoriosContainer) {
+                    relatoriosContainer.innerHTML = `<div class="${gridClass}"></div>`;
+                }
+
+                config.ascendente.forEach((nome, i) => gerarCard('Asc', i, nome, totalFiltros));
+                config.descendente.forEach((nome, i) => gerarCard('Desc', i, nome, totalFiltros));
+
+                config.ascendente.forEach((nome, i) => {
+                    const dados = dadosFiltros ? dadosFiltros.find(f => f.id === `asc_${i}`) : null;
+                    inicializarTabelas('Asc', i, dados, nome);
+                });
+                config.descendente.forEach((nome, i) => {
+                    const dados = dadosFiltros ? dadosFiltros.find(f => f.id === `desc_${i}`) : null;
+                    inicializarTabelas('Desc', i, dados, nome);
+                });
+            }
+
+            function gerarCard(tipo, index, nome, totalFiltros) {
+                const tipoLower = tipo.toLowerCase();
+                const cor = tipo === 'Asc' ? 'blue' : 'green';
+                const corBadge = tipo === 'Asc' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
+                const corHex = tipo === 'Asc' ? '#3b82f6' : '#16a34a';
+                const cardWidthClass = totalFiltros === 1 ? 'w-full lg:w-3/4' : '';
+                const inputStyle = "w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-200 focus:border-blue-500 focus:outline-none shadow-sm";
+
+                const velCardHTML = `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md ${cardWidthClass}">
+                    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-${cor}-50">
+                        <h3 class="text-xl font-semibold text-${cor}-700 flex items-center"><i class="fas fa-tachometer-alt mr-2"></i> ${nome}</h3>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${corBadge}">${tipo === 'Asc' ? 'Ascendente' : 'Descendente'}</span>
+                    </div>
+                    <div class="p-6">
+                        <div class="mb-4">
+                            <label for="distancia_${tipoLower}_${index}" class="block text-sm font-medium text-gray-700 mb-1">Altura na régua (cm) <span class="text-red-500">*</span></label>
+                            <input type="number" id="distancia_${tipoLower}_${index}" value="10" class="${inputStyle}">
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3">Tempo (s)</th>
+                                        <th class="px-4 py-3">Velocidade (cm/min)</th>
+                                        <th class="px-2 py-3 text-center">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelaVelocidade_${tipoLower}_${index}"></tbody>
+                            </table>
+                        </div>
+                        <div class="mt-4">
+                            <button id="btn-add-vel_${tipoLower}_${index}" class="inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors duration-200 focus:outline-none w-full bg-${cor}-100 text-${cor}-700 hover:bg-${cor}-200">
+                                <i class="fas fa-plus-circle mr-2"></i> Adicionar Linha
+                            </button>
+                        </div>
+                        <div class="mt-4 flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                            <span class="font-semibold text-gray-700">Média:</span>
+                            <strong id="mediaVelocidade_${tipoLower}_${index}" class="text-lg font-bold text-gray-800">0.00</strong>
+                        </div>
+                    </div>
+                </div>`;
+                tabContents.velocidade.querySelector('.grid, .flex').innerHTML += velCardHTML;
+
+                const turCardHTML = `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md ${cardWidthClass}">
+                    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-${cor}-50">
+                        <h3 class="text-xl font-semibold text-${cor}-700 flex items-center"><i class="fas fa-water mr-2"></i> ${nome}</h3>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${corBadge}">${tipo === 'Asc' ? 'Ascendente' : 'Descendente'}</span>
+                    </div>
+                    <div class="p-6">
+                        <div class="h-64 sm:h-80 mb-4 relative">
+                            <canvas id="graficoTurbidez_${tipoLower}_${index}"></canvas>
+                            <div class="absolute top-2 right-2 text-xs text-gray-500">
+                                <span class="inline-block w-3 h-3 rounded-full mr-1" style="background-color: ${corHex}"></span> Turbidez (NTU)
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3">Tempo (min)</th>
+                                        <th class="px-4 py-3">Turbidez (NTU)</th>
+                                        <th class="px-2 py-3 text-center">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelaTurbidez_${tipoLower}_${index}"></tbody>
+                            </table>
+                        </div>
+                        <div class="mt-4">
+                            <button id="btn-add-tur_${tipoLower}_${index}" class="inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors duration-200 focus:outline-none w-full bg-${cor}-100 text-${cor}-700 hover:bg-${cor}-200">
+                                <i class="fas fa-plus-circle mr-2"></i> Adicionar Linha
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+                tabContents.turbidez.querySelector('.grid, .flex').innerHTML += turCardHTML;
+
+                const relCardHTML = `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md ${cardWidthClass}">
+                    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-${cor}-50">
+                        <h3 class="text-xl font-semibold text-${cor}-700 flex items-center"><i class="fas fa-file-alt mr-2"></i> ${nome}</h3>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${corBadge}">${tipo === 'Asc' ? 'Ascendente' : 'Descendente'}</span>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div><label for="alturaRegua_${tipoLower}_${index}" class="block text-sm font-medium text-gray-700 mb-1">Altura na régua (cm)</label><input type="number" id="alturaRegua_${tipoLower}_${index}" class="${inputStyle}"></div>
+                            <div><label for="tempoMedido_${tipoLower}_${index}" class="block text-sm font-medium text-gray-700 mb-1">Tempo medido (s)</label><input type="number" id="tempoMedido_${tipoLower}_${index}" class="${inputStyle}"></div>
+                            <div><label for="areaFiltro_${tipoLower}_${index}" class="block text-sm font-medium text-gray-700 mb-1">Área do filtro (m²)</label><input type="number" step="0.01" id="areaFiltro_${tipoLower}_${index}" class="${inputStyle}"></div>
+                            <div><label for="vazaoProjetada_${tipoLower}_${index}" class="block text-sm font-medium text-gray-700 mb-1">Vazão projetada (L/s)</label><input type="number" id="vazaoProjetada_${tipoLower}_${index}" class="${inputStyle}"></div>
+                            <div><label for="quantidadeFiltros_${tipoLower}_${index}" class="block text-sm font-medium text-gray-700 mb-1">Qtd. de filtros</label><input type="number" id="quantidadeFiltros_${tipoLower}_${index}" class="${inputStyle}"></div>
+                            <div><label for="expansaoMaterial_${tipoLower}_${index}" class="block text-sm font-medium text-gray-700 mb-1">Expansão do material (%)</label><input type="number" id="expansaoMaterial_${tipoLower}_${index}" class="${inputStyle}"></div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t space-y-2">
+                            <div class="flex justify-between items-center p-3 rounded-lg bg-gray-50"><span class="text-sm font-medium">Área total dos Filtros (m²):</span><strong id="areaTotalFiltros_${tipoLower}_${index}" class="text-base font-semibold">0.00</strong></div>
+                            <div class="flex justify-between items-center p-3 rounded-lg bg-gray-50"><span class="text-sm font-medium">Taxa de filtração projetada (m³/m².dia):</span><strong id="taxaProjetada_${tipoLower}_${index}" class="text-base font-semibold">0.00</strong></div>
+                            <div class="flex justify-between items-center p-3 rounded-lg bg-gray-50"><span class="text-sm font-medium">Taxa de filtração (m³/dia):</span><strong id="taxaAtual_${tipoLower}_${index}" class="text-base font-semibold">0.00</strong></div>
+                            <div class="flex justify-between items-center p-3 rounded-lg bg-gray-50"><span class="text-sm font-medium">Taxa de filtração Anual (m³/m².dia):</span><strong id="taxaAnual_${tipoLower}_${index}" class="text-base font-semibold">0.00</strong></div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t">
+                            <label for="observacoes_${tipoLower}_${index}" class="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                            <textarea id="observacoes_${tipoLower}_${index}" rows="4" class="${inputStyle} mt-1" placeholder="Insira aqui as observações..."></textarea>
+                        </div>
+                        <div class="mt-4 pt-4 border-t">
+                            <label for="fotos_${tipoLower}_${index}" class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-camera mr-2"></i> Anexar Fotos</label>
+                            <input type="file" id="fotos_${tipoLower}_${index}" multiple accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            <div id="preview_${tipoLower}_${index}" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-3"></div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t">
+                            <div class="flex flex-wrap items-center gap-4 mb-4">
+                                <div class="flex items-center"><input id="incluirObs_${tipoLower}_${index}" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"><label for="incluirObs_${tipoLower}_${index}" class="ml-2 block text-sm text-gray-900">Incluir Observações</label></div>
+                                <div class="flex items-center"><input id="incluirFotos_${tipoLower}_${index}" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"><label for="incluirFotos_${tipoLower}_${index}" class="ml-2 block text-sm text-gray-900">Incluir Fotos</label></div>
+                            </div>
+                            <button id="pdf-button-${tipoLower}-${index}" class="inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 bg-gray-700 text-white hover:bg-gray-800 w-full py-2.5">
+                                <i class="fas fa-file-pdf mr-2"></i> Gerar Laudo (PDF)
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+                const relatoriosCardsContainer = document.getElementById('relatorios-cards-container');
+                if (relatoriosCardsContainer) {
+                    relatoriosCardsContainer.querySelector('.grid, .flex').innerHTML += relCardHTML;
+                }
+            }
+
+            // --- DATA HANDLING & CALCULATIONS ---
+            function inicializarTabelas(tipo, index, dados, nomeFiltro) {
+                const tipoLower = tipo.toLowerCase();
+
+                document.getElementById(`distancia_${tipoLower}_${index}`).addEventListener('input', () => calcularVelocidade(tipo, index));
+                document.getElementById(`btn-add-vel_${tipoLower}_${index}`).addEventListener('click', () => adicionarLinhaVelocidade(tipo, index, true));
+                document.getElementById(`btn-add-tur_${tipoLower}_${index}`).addEventListener('click', () => adicionarLinhaTurbidez(tipo, index, true));
+                document.getElementById(`fotos_${tipoLower}_${index}`).addEventListener('change', (e) => previewImages(e, tipoLower, index));
+                document.getElementById(`pdf-button-${tipoLower}-${index}`).addEventListener('click', () => gerarLaudoPDF(tipo, index, nomeFiltro));
+
+                const reportInputs = ['alturaRegua', 'tempoMedido', 'areaFiltro', 'vazaoProjetada', 'quantidadeFiltros'];
+                reportInputs.forEach(id => {
+                    document.getElementById(`${id}_${tipoLower}_${index}`).addEventListener('input', () => calcularExpansao(tipo, index));
+                });
+
+                if (dados) {
+                    dados.velocidade.forEach(val => adicionarLinhaVelocidade(tipo, index, false, val));
+                    dados.turbidez.forEach(val => adicionarLinhaTurbidez(tipo, index, false, val));
+                    document.getElementById(`distancia_${tipoLower}_${index}`).value = dados.distancia || 10;
+                    document.getElementById(`alturaRegua_${tipoLower}_${index}`).value = dados.alturaRegua || '';
+                    document.getElementById(`tempoMedido_${tipoLower}_${index}`).value = dados.tempoMedido || '';
+                    document.getElementById(`areaFiltro_${tipoLower}_${index}`).value = dados.areaFiltro || '';
+                    document.getElementById(`vazaoProjetada_${tipoLower}_${index}`).value = dados.vazaoProjetada || '';
+                    document.getElementById(`quantidadeFiltros_${tipoLower}_${index}`).value = dados.quantidadeFiltros || '';
+                    document.getElementById(`expansaoMaterial_${tipoLower}_${index}`).value = dados.expansaoMaterial || '';
+                    document.getElementById(`observacoes_${tipoLower}_${index}`).value = dados.observacoes || '';
+                    document.getElementById(`incluirObs_${tipoLower}_${index}`).checked = dados.incluirObs || false;
+                    document.getElementById(`incluirFotos_${tipoLower}_${index}`).checked = dados.incluirFotos || false;
+                } else {
+                    for (let i = 0; i < 5; i++) {
+                        adicionarLinhaVelocidade(tipo, index);
+                        adicionarLinhaTurbidez(tipo, index);
+                    }
+                }
+
+                calcularVelocidade(tipo, index);
+                atualizarGraficosTurbidez(tipo, index);
+                calcularExpansao(tipo, index);
+            }
+
+            function adicionarLinhaVelocidade(tipo, index, salvar = false, valor = '') {
+                const tipoLower = tipo.toLowerCase();
+                const tabelaBody = document.getElementById(`tabelaVelocidade_${tipoLower}_${index}`);
+                const novaLinha = tabelaBody.insertRow();
+                novaLinha.className = 'border-b hover:bg-gray-50';
+                novaLinha.innerHTML = `
+                    <td class="px-4 py-2"><input type="number" placeholder="Tempo" value="${valor}" class="w-full px-3 py-1.5 rounded border border-gray-200 bg-white text-center text-sm transition-colors duration-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none"></td>
+                    <td class="px-4 py-2 font-medium"></td>
+                    <td class="px-2 py-2 text-center"><button class="text-gray-400 hover:text-red-500 transition-colors duration-200 font-bold text-lg" title="Remover linha"><i class="fas fa-trash-alt"></i></button></td>
+                `;
+                novaLinha.querySelector('input').addEventListener('input', () => calcularVelocidade(tipo, index));
+                novaLinha.querySelector('button').addEventListener('click', (e) => excluirLinha(e.currentTarget, tipo, index, 'velocidade'));
+            }
+
+            function adicionarLinhaTurbidez(tipo, index, salvar = false, valor = '') {
+                const tipoLower = tipo.toLowerCase();
+                const tabelaBody = document.getElementById(`tabelaTurbidez_${tipoLower}_${index}`);
+                const novoTempo = tabelaBody.rows.length + 1;
+                const novaLinha = tabelaBody.insertRow();
+                novaLinha.className = 'border-b hover:bg-gray-50';
+                novaLinha.innerHTML = `
+                    <td class="px-4 py-2 font-medium">${novoTempo}</td>
+                    <td class="px-4 py-2"><input type="number" placeholder="Turbidez" value="${valor}" class="w-full px-3 py-1.5 rounded border border-gray-200 bg-white text-center text-sm transition-colors duration-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none"></td>
+                    <td class="px-2 py-2 text-center"><button class="text-gray-400 hover:text-red-500 transition-colors duration-200 font-bold text-lg" title="Remover linha"><i class="fas fa-trash-alt"></i></button></td>
+                `;
+                const input = novaLinha.querySelector('input');
+                input.addEventListener('input', () => {
+                    validarTurbidez(input);
+                    atualizarGraficosTurbidez(tipo, index);
+                });
+                novaLinha.querySelector('button').addEventListener('click', (e) => excluirLinha(e.currentTarget, tipo, index, 'turbidez'));
+                validarTurbidez(input);
+            }
+
+            function excluirLinha(button, tipo, index, tipoTabela) {
+                const row = button.closest('tr');
+                const tbody = row.parentNode;
+                row.remove();
+
+                if (tipoTabela === 'velocidade') {
+                    calcularVelocidade(tipo, index);
+                } else if (tipoTabela === 'turbidez') {
+                    reindexarTabelaTurbidez(tbody.id);
+                    atualizarGraficosTurbidez(tipo, index);
+                }
+            }
+
+            function calcularVelocidade(tipo, index) {
+                const tipoLower = tipo.toLowerCase();
+                const dist = parseFloat(document.getElementById(`distancia_${tipoLower}_${index}`).value);
+                const linhas = document.querySelectorAll(`#tabelaVelocidade_${tipoLower}_${index} tr`);
+                let somaVelocidades = 0, countValidos = 0;
+
+                linhas.forEach(linha => {
+                    const tempoInput = linha.querySelector('input');
+                    const tempo = parseFloat(tempoInput.value);
+                    const celulaVelocidade = linha.cells[1];
+                    celulaVelocidade.classList.remove('padrao-ok', 'fora-padrao');
+                    tempoInput.classList.remove('padrao-ok', 'fora-padrao');
+
+                    if (!isNaN(dist) && !isNaN(tempo) && tempo > 0) {
+                        const velocidade = (dist / tempo) * 60;
+                        celulaVelocidade.textContent = velocidade.toFixed(2);
+                        const isOk = velocidade >= ABNT_STANDARDS.VELOCIDADE_MIN && velocidade <= ABNT_STANDARDS.VELOCIDADE_MAX;
+                        celulaVelocidade.classList.toggle('padrao-ok', isOk);
+                        celulaVelocidade.classList.toggle('fora-padrao', !isOk);
+                        somaVelocidades += velocidade;
+                        countValidos++;
+                    } else {
+                        celulaVelocidade.textContent = '-';
+                    }
+                });
+
+                const mediaEl = document.getElementById(`mediaVelocidade_${tipoLower}_${index}`);
+                const media = countValidos > 0 ? somaVelocidades / countValidos : 0;
+                mediaEl.textContent = media.toFixed(2);
+                mediaEl.classList.remove('padrao-ok', 'fora-padrao');
+                if (media > 0) {
+                    const isMediaOk = media >= ABNT_STANDARDS.VELOCIDADE_MIN && media <= ABNT_STANDARDS.VELOCIDADE_MAX;
+                    mediaEl.classList.toggle('padrao-ok', isMediaOk);
+                    mediaEl.classList.toggle('fora-padrao', !isMediaOk);
+                }
+            }
+
+            function validarTurbidez(input) {
+                const valor = parseFloat(input.value);
+                input.classList.remove('padrao-ok', 'fora-padrao');
+                if (!isNaN(valor)) {
+                    input.classList.toggle('padrao-ok', valor <= ABNT_STANDARDS.TURBIDEZ_MAX);
+                    input.classList.toggle('fora-padrao', valor > ABNT_STANDARDS.TURBIDEZ_MAX);
+                }
+            }
+
+            function reindexarTabelaTurbidez(tbodyId) {
+                const tbody = document.getElementById(tbodyId);
+                Array.from(tbody.rows).forEach((row, i) => {
+                    row.cells[0].textContent = i + 1;
+                });
+            }
+
+            function calcularExpansao(tipo, index) {
+                const tipoLower = tipo.toLowerCase();
+                const alturaRegua = parseFloat(document.getElementById(`alturaRegua_${tipoLower}_${index}`).value) || 0;
+                const tempoMedido = parseFloat(document.getElementById(`tempoMedido_${tipoLower}_${index}`).value) || 0;
+                const areaFiltro = parseFloat(document.getElementById(`areaFiltro_${tipoLower}_${index}`).value) || 0;
+                const vazaoProjetada = parseFloat(document.getElementById(`vazaoProjetada_${tipoLower}_${index}`).value) || 0;
+                const quantidadeFiltros = parseFloat(document.getElementById(`quantidadeFiltros_${tipoLower}_${index}`).value) || 0;
+
+                const areaTotalFiltros = quantidadeFiltros * areaFiltro;
+                const taxaProjetada = areaTotalFiltros > 0 ? (vazaoProjetada * 86.4) / areaTotalFiltros : 0;
+                const taxaAtual = tempoMedido > 0 ? (areaFiltro * (alturaRegua / 100)) / (tempoMedido / 86400) : 0;
+                const taxaAnual = tempoMedido > 0 ? (alturaRegua / 100) / (tempoMedido / 86400) : 0;
+
+                document.getElementById(`areaTotalFiltros_${tipoLower}_${index}`).textContent = areaTotalFiltros.toFixed(2);
+                const taxaProjetadaEl = document.getElementById(`taxaProjetada_${tipoLower}_${index}`);
+                taxaProjetadaEl.textContent = taxaProjetada.toFixed(2);
+                taxaProjetadaEl.classList.remove('padrao-ok', 'fora-padrao');
+                if (taxaProjetada > 0) {
+                    taxaProjetadaEl.classList.toggle('padrao-ok', taxaProjetada >= ABNT_STANDARDS.TAXA_FILTRACAO_MIN && taxaProjetada <= ABNT_STANDARDS.TAXA_FILTRACAO_MAX);
+                    taxaProjetadaEl.classList.toggle('fora-padrao', taxaProjetada < ABNT_STANDARDS.TAXA_FILTRACAO_MIN || taxaProjetada > ABNT_STANDARDS.TAXA_FILTRACAO_MAX);
+                }
+                document.getElementById(`taxaAtual_${tipoLower}_${index}`).textContent = taxaAtual.toFixed(2);
+                document.getElementById(`taxaAnual_${tipoLower}_${index}`).textContent = taxaAnual.toFixed(2);
+            }
+
+            // --- CHARTING ---
+            function atualizarGraficosTurbidez(tipo, index) {
+                const tipoLower = tipo.toLowerCase();
+                const dados = [], labels = [];
+
+                document.querySelectorAll(`#tabelaTurbidez_${tipoLower}_${index} tr`).forEach(linha => {
+                    const tempo = linha.cells[0].textContent;
+                    const input = linha.querySelector('input');
+                    const turbidez = parseFloat(input.value);
+                    if (!isNaN(turbidez)) {
+                        dados.push(turbidez);
+                        labels.push(tempo);
+                    }
+                });
+
+                const cor = tipo === 'Asc' ? 'rgba(59, 130, 246, 1)' : 'rgba(22, 163, 74, 1)';
+                const corBg = tipo === 'Asc' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(22, 163, 74, 0.2)';
+                renderizarGrafico(`graficoTurbidez_${tipoLower}_${index}`, `turbidez_${tipoLower}_${index}`, labels, dados, cor, corBg);
+            }
+
+            function renderizarGrafico(canvasId, chartKey, labels, data, borderColor, backgroundColor) {
+                const ctx = document.getElementById(canvasId)?.getContext('2d');
+                if (!ctx) return;
+                if (charts[chartKey]) charts[chartKey].destroy();
+
+                charts[chartKey] = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Turbidez (NTU)',
+                            data,
+                            borderColor,
+                            backgroundColor,
+                            borderWidth: 2,
+                            pointBackgroundColor: borderColor,
+                            pointBorderColor: '#fff',
+                            pointHoverRadius: 6,
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#64748b' }, title: { display: true, text: 'Turbidez (NTU)', color: '#64748b' } },
+                            x: { grid: { display: false }, ticks: { color: '#64748b' }, title: { display: true, text: 'Tempo (min)', color: '#64748b' } }
+                        }
+                    }
+                });
+            }
+
+            // --- IMAGE HANDLING ---
+            function previewImages(event, tipoLower, index) {
+                const previewContainer = document.getElementById(`preview_${tipoLower}_${index}`);
+                previewContainer.innerHTML = '';
+                const files = event.target.files;
+
+                if (files && files.length > 0) {
+                    Array.from(files).forEach((file) => {
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            const imgWrapper = document.createElement('div');
+                            imgWrapper.className = 'relative group';
+                            imgWrapper.innerHTML = `
+                                <img src="${e.target.result}" class="w-full h-24 object-cover rounded-md border-2 border-gray-200 cursor-pointer transition-transform duration-200 hover:scale-105">
+                            `;
+                            previewContainer.appendChild(imgWrapper);
+                        }
+                        reader.readAsDataURL(file);
+                    });
+                }
+            }
+
+            // --- DATA PERSISTENCE (LOCALSTORAGE) ---
+            function salvarConfiguracao() {
+                const button = document.getElementById('btn-salvar-config');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<span class="loading-spinner"></span> Salvando...';
+                button.disabled = true;
+
+                setTimeout(() => {
+                    config.eta = document.getElementById('nomeEta').value;
+                    config.distrito = document.getElementById('distrito').value;
+                    config.respTecnico = document.getElementById('respTecnico').value;
+                    config.analistas = Array.from(document.querySelectorAll('.tecnico-analise')).map(input => input.value).filter(Boolean);
+                    config.dataAnalise = document.getElementById('dataAnalise').value;
+
+                    config.ascendente = Array.from({ length: parseInt(document.getElementById('qtdAscendente').value) || 0 }, (_, i) => document.getElementById(`nome_Ascendente_${i}`).value);
+                    config.descendente = Array.from({ length: parseInt(document.getElementById('qtdDescendente').value) || 0 }, (_, i) => document.getElementById(`nome_Descendente_${i}`).value);
+
+                    isConfigured = true;
+                    gerarEstruturaPaineis();
+                    salvarTodosDados();
+
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                    showNotification('success', 'Configuração salva e painéis gerados com sucesso!');
+                    changeTab('velocidade');
+                }, 200);
+            }
+
+            function salvarTodosDados() {
+                const dadosParaSalvar = { config, filtros: [] };
+                config.ascendente.forEach((_, i) => dadosParaSalvar.filtros.push(coletarDadosFiltro('asc', i)));
+                config.descendente.forEach((_, i) => dadosParaSalvar.filtros.push(coletarDadosFiltro('desc', i)));
+                localStorage.setItem('dadosFiltrosApp', JSON.stringify(dadosParaSalvar));
+            }
+
+            function coletarDadosFiltro(tipoLower, index) {
+                const getElValue = (id) => document.getElementById(`${id}_${tipoLower}_${index}`)?.value || '';
+                const getElChecked = (id) => document.getElementById(`${id}_${tipoLower}_${index}`)?.checked || false;
+
+                return {
+                    id: `${tipoLower}_${index}`,
+                    distancia: getElValue('distancia'),
+                    alturaRegua: getElValue('alturaRegua'),
+                    tempoMedido: getElValue('tempoMedido'),
+                    areaFiltro: getElValue('areaFiltro'),
+                    vazaoProjetada: getElValue('vazaoProjetada'),
+                    quantidadeFiltros: getElValue('quantidadeFiltros'),
+                    expansaoMaterial: getElValue('expansaoMaterial'),
+                    observacoes: getElValue('observacoes'),
+                    velocidade: Array.from(document.querySelectorAll(`#tabelaVelocidade_${tipoLower}_${index} input`)).map(i => i.value),
+                    turbidez: Array.from(document.querySelectorAll(`#tabelaTurbidez_${tipoLower}_${index} input`)).map(i => i.value),
+                    incluirObs: getElChecked('incluirObs'),
+                    incluirFotos: getElChecked('incluirFotos'),
+                };
+            }
+
+            function carregarDadosDoLocalStorage() {
+                const dadosSalvos = localStorage.getItem('dadosFiltrosApp');
+                return dadosSalvos ? JSON.parse(dadosSalvos) : null;
+            }
+
+            function aplicarDadosCarregados(dados) {
+                if (!dados || !dados.config) return;
+
+                config = {
+                    eta: '', distrito: '', respTecnico: '', analistas: [],
+                    ascendente: [], descendente: [], dataAnalise: '', ...dados.config
+                };
+
+                document.getElementById('nomeEta').value = config.eta || '';
+                document.getElementById('distrito').value = config.distrito || '';
+                document.getElementById('respTecnico').value = config.respTecnico || '';
+                document.getElementById('dataAnalise').value = config.dataAnalise || new Date().toISOString().slice(0, 10);
+
+                document.getElementById('tecnicosContainer').innerHTML = '';
+                (config.analistas || []).forEach(nome => adicionarTecnico(false, nome));
+
+                document.getElementById('qtdAscendente').value = config.ascendente.length;
+                gerarCamposNomes('Ascendente');
+                config.ascendente.forEach((nome, i) => {
+                    const el = document.getElementById(`nome_Ascendente_${i}`);
+                    if (el) el.value = nome;
+                });
+
+                document.getElementById('qtdDescendente').value = config.descendente.length;
+                gerarCamposNomes('Descendente');
+                config.descendente.forEach((nome, i) => {
+                    const el = document.getElementById(`nome_Descendente_${i}`);
+                    if (el) el.value = nome;
+                });
+
+                isConfigured = true;
+                gerarEstruturaPaineis(dados.filtros);
+            }
+
+            // --- IMPORT/EXPORT ---
+            function exportarJSON() {
+                salvarTodosDados();
+                const dados = carregarDadosDoLocalStorage();
+                if (!dados) {
+                    showNotification('error', 'Não há dados para exportar.');
+                    return;
+                }
+
+                const jsonString = JSON.stringify(dados, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.href = url;
+
+                const date = (config.dataAnalise || new Date().toISOString().slice(0, 10));
+                const etaNome = (config.eta || 'ETA').replace(/\s+/g, '_');
+
+                link.download = `backup_${etaNome}_${date}.json`;
+
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                showNotification('success', 'Backup exportado com sucesso!');
+            }
+
+            function importarJSON(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    try {
+                        const dadosImportados = JSON.parse(e.target.result);
+                        if (!dadosImportados.config || !dadosImportados.filtros) {
+                            throw new Error("Formato de arquivo inválido.");
+                        }
+                        localStorage.setItem('dadosFiltrosApp', JSON.stringify(dadosImportados));
+                        aplicarDadosCarregados(dadosImportados);
+                        showNotification('success', 'Backup importado com sucesso!');
+                        changeTab('configuracao');
+                    } catch (error) {
+                        console.error("Erro ao importar JSON:", error);
+                        showNotification('error', 'Erro ao importar. Verifique o arquivo.');
+                    } finally {
+                        event.target.value = '';
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            // --- PDF GENERATION (CORE LOGIC) ---
+            async function criarDocumentoPDF(tipo, index, nomeFiltro) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                const tipoLower = tipo.toLowerCase();
+
+                const pageHeight = doc.internal.pageSize.height;
+                const pageWidth = doc.internal.pageSize.width;
+                const margin = 15;
+                let finalY = 0;
+
+                const reportData = coletarDadosFiltro(tipoLower, index);
+
+                const addHeader = () => {
+                    doc.setFontSize(16);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(40, 40, 40);
+                    doc.text(config.eta || "Nome da ETA", margin, 20);
+
+                    doc.setFontSize(9);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(150, 150, 150);
+                    doc.text(`Relatório de Avaliação de Filtro`, pageWidth - margin, 20, { align: 'right' });
+
+                    doc.setDrawColor(230, 230, 230);
+                    doc.line(margin, 25, pageWidth - margin, 25);
+                    finalY = 35;
+                };
+
+                const addFooter = () => {
+                    const pageCount = doc.internal.getNumberOfPages();
+                    doc.setFontSize(8);
+                    doc.setTextColor(150, 150, 150);
+                    for (let i = 1; i <= pageCount; i++) {
+                        doc.setPage(i);
+                        doc.text(`Página ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+                        doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, margin, pageHeight - 10);
+                    }
+                };
+
+                const checkPageBreak = (y) => {
+                    if (y >= pageHeight - 25) {
+                        doc.addPage();
+                        addHeader();
+                        return 35;
+                    }
+                    return y;
+                };
+
+                const addSectionTitle = (title) => {
+                    finalY = checkPageBreak(finalY + 10);
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(60, 110, 180);
+                    doc.text(title, margin, finalY);
+                    finalY += 6;
+                    doc.setDrawColor(220, 220, 220);
+                    doc.line(margin, finalY, pageWidth - margin, finalY);
+                    finalY += 8;
+                };
+
+                addHeader();
+
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(40, 40, 40);
+                doc.text(`Laudo de Análise: ${nomeFiltro}`, margin, finalY);
+                finalY += 7;
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Data da Análise: ${config.dataAnalise ? new Date(config.dataAnalise + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não informada'}`, margin, finalY);
+                finalY += 5;
+
+                addSectionTitle("1. Análise de Velocidade de Lavagem");
+                doc.setFontSize(9).setFont('helvetica', 'normal').setTextColor(80, 80, 80);
+                doc.text(`Padrão ABNT: ${ABNT_STANDARDS.VELOCIDADE_MIN} a ${ABNT_STANDARDS.VELOCIDADE_MAX} cm/min`, margin, finalY);
+                finalY += 6;
+
+                const dist = parseFloat(reportData.distancia);
+                let somaVelocidades = 0, countValidos = 0;
+                const velBody = reportData.velocidade.map(tempoStr => {
+                    const tempo = parseFloat(tempoStr);
+                    if (!isNaN(dist) && !isNaN(tempo) && tempo > 0) {
+                        const velocidade = (dist / tempo) * 60;
+                        somaVelocidades += velocidade;
+                        countValidos++;
+                        const isOk = velocidade >= ABNT_STANDARDS.VELOCIDADE_MIN && velocidade <= ABNT_STANDARDS.VELOCIDADE_MAX;
+                        return [tempoStr, velocidade.toFixed(2), isOk ? '✔' : '✖'];
+                    }
+                    return null;
+                }).filter(Boolean);
+
+                const mediaVel = countValidos > 0 ? somaVelocidades / countValidos : 0;
+                const isMediaOk = mediaVel >= ABNT_STANDARDS.VELOCIDADE_MIN && mediaVel <= ABNT_STANDARDS.VELOCIDADE_MAX;
+                velBody.push([{ content: 'Média', colSpan: 1, styles: { fontStyle: 'bold' } }, { content: mediaVel.toFixed(2), styles: { fontStyle: 'bold' } }, { content: isMediaOk ? '✔' : '✖', styles: { fontStyle: 'bold' } }]);
+
+                doc.autoTable({
+                    startY: finalY,
+                    head: [['Tempo (s)', 'Velocidade (cm/min)', 'Status']],
+                    body: velBody,
+                    theme: 'striped',
+                    headStyles: { fillColor: [240, 240, 240], textColor: [40, 40, 40], fontStyle: 'bold' },
+                    didParseCell: function (data) {
+                        if (data.column.index === 2) {
+                            data.cell.styles.halign = 'center';
+                            if (data.cell.text[0] === '✔') data.cell.styles.textColor = [0, 150, 0];
+                            if (data.cell.text[0] === '✖') data.cell.styles.textColor = [200, 0, 0];
+                        }
+                    }
+                });
+                finalY = doc.autoTable.previous.finalY;
+
+                addSectionTitle("2. Análise de Remoção de Turbidez");
+                doc.setFontSize(9).setFont('helvetica', 'normal').setTextColor(80, 80, 80);
+                doc.text(`Padrão ABNT: Máximo de ${ABNT_STANDARDS.TURBIDEZ_MAX} NTU`, margin, finalY);
+                finalY += 6;
+                finalY = checkPageBreak(finalY);
+
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 800;
+                tempCanvas.height = 400;
+                const tempCtx = tempCanvas.getContext('2d');
+
+                const chartData = { labels: [], data: [] };
+                reportData.turbidez.forEach((turbidezStr, i) => {
+                    const turbidez = parseFloat(turbidezStr);
+                    if (!isNaN(turbidez)) {
+                        chartData.data.push(turbidez);
+                        chartData.labels.push(String(i + 1));
+                    }
+                });
+
+                let chartImageData = null;
+                if (chartData.data.length > 0) {
+                    const cor = tipo === 'Asc' ? 'rgba(59, 130, 246, 1)' : 'rgba(22, 163, 74, 1)';
+                    const corBg = tipo === 'Asc' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(22, 163, 74, 0.2)';
+
+                    const tempChart = new Chart(tempCtx, {
+                        type: 'line',
+                        data: {
+                            labels: chartData.labels,
+                            datasets: [{
+                                label: 'Turbidez (NTU)',
+                                data: chartData.data,
+                                borderColor: cor,
+                                backgroundColor: corBg,
+                                borderWidth: 2,
+                                pointBackgroundColor: cor,
+                                pointBorderColor: '#fff',
+                                pointHoverRadius: 6,
+                                tension: 0.1,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            animation: false,
+                            responsive: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#64748b' }, title: { display: true, text: 'Turbidez (NTU)', color: '#64748b' } },
+                                x: { grid: { display: false }, ticks: { color: '#64748b' }, title: { display: true, text: 'Tempo (min)', color: '#64748b' } }
+                            }
+                        }
+                    });
+
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    chartImageData = tempChart.toBase64Image();
+                    tempChart.destroy();
+                }
+
+                if (chartImageData) {
+                    doc.addImage(chartImageData, 'PNG', margin, finalY, pageWidth - (margin * 2), 70);
+                    finalY += 75;
+                } else {
+                    doc.setFontSize(9).setTextColor(150, 150, 150).text('Gráfico de turbidez não disponível ou sem dados.', margin, finalY);
+                    finalY += 5;
+                }
+
+                addSectionTitle("3. Dados de Operação e Taxas");
+                const reportBody = [
+                    ['Altura na régua (cm)', reportData.alturaRegua || 'N/A'],
+                    ['Tempo medido (s)', reportData.tempoMedido || 'N/A'],
+                    ['Área do filtro (m²)', reportData.areaFiltro || 'N/A'],
+                    ['Vazão projetada (L/s)', reportData.vazaoProjetada || 'N/A'],
+                    ['Quantidade de filtros', reportData.quantidadeFiltros || 'N/A'],
+                    ['Expansão do material (%)', reportData.expansaoMaterial || 'N/A'],
+                ];
+                doc.autoTable({
+                    startY: finalY,
+                    body: reportBody,
+                    theme: 'plain',
+                    styles: { fontSize: 9 },
+                    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 70 } }
+                });
+                finalY = doc.autoTable.previous.finalY;
+
+                addSectionTitle("4. Parecer Técnico");
+                const turbidezValues = reportData.turbidez.map(v => parseFloat(v)).filter(v => !isNaN(v));
+                const turbidezMaxMedida = turbidezValues.length > 0 ? Math.max(...turbidezValues) : NaN;
+
+                const isTurbidezOk = !isNaN(turbidezMaxMedida) ? turbidezMaxMedida <= ABNT_STANDARDS.TURBIDEZ_MAX : true;
+                const isAprovado = isMediaOk && isTurbidezOk;
+
+                doc.setFontSize(11).setFont('helvetica', 'bold');
+                if (isAprovado) {
+                    doc.setTextColor(0, 150, 0);
+                } else {
+                    doc.setTextColor(200, 0, 0);
+                }
+                doc.text(isAprovado ? 'APROVADO' : 'REPROVADO', margin, finalY);
+                finalY += 8;
+
+                doc.setFontSize(9).setFont('helvetica', 'normal').setTextColor(80, 80, 80);
+                let parecerText = `O filtro foi considerado ${isAprovado ? 'APROVADO' : 'REPROVADO'} nos testes de avaliação. `;
+                parecerText += `A velocidade média de lavagem foi de ${mediaVel.toFixed(2)} cm/min (Padrão: ${ABNT_STANDARDS.VELOCIDADE_MIN}-${ABNT_STANDARDS.VELOCIDADE_MAX} cm/min). `;
+                if (!isNaN(turbidezMaxMedida) && isFinite(turbidezMaxMedida)) {
+                    parecerText += `O valor máximo de turbidez registrado foi de ${turbidezMaxMedida.toFixed(2)} NTU (Padrão: máx ${ABNT_STANDARDS.TURBIDEZ_MAX} NTU).`;
+                } else {
+                    parecerText += `Não foram registrados dados de turbidez para avaliação.`;
+                }
+                const parecerLines = doc.splitTextToSize(parecerText, pageWidth - (margin * 2));
+                doc.text(parecerLines, margin, finalY);
+                finalY += (parecerLines.length * 4) + 5;
+
+                let sectionNumber = 5;
+                if (reportData.incluirObs && reportData.observacoes) {
+                    addSectionTitle(`${sectionNumber}. Observações`);
+                    sectionNumber++;
+                    doc.setFontSize(9).setFont('helvetica', 'normal').setTextColor(80, 80, 80);
+                    const lines = doc.splitTextToSize(reportData.observacoes, pageWidth - (margin * 2));
+                    doc.text(lines, margin, finalY);
+                    finalY += (lines.length * 4) + 5;
+                }
+
+                if (reportData.incluirFotos) {
+                    const files = document.getElementById(`fotos_${tipoLower}_${index}`).files;
+                    if (files.length > 0) {
+                        doc.addPage();
+                        addHeader();
+                        addSectionTitle(`${sectionNumber}. Anexos Fotográficos`);
+                        const filePromises = Array.from(files).map(file => new Promise(resolve => {
+                            const reader = new FileReader();
+                            reader.onload = e => resolve(e.target.result);
+                            reader.readAsDataURL(file);
+                        }));
+                        const images = await Promise.all(filePromises);
+
+                        let xPos = margin;
+                        const imgWidth = (pageWidth - (margin * 2) - 5) / 2;
+                        const imgHeight = imgWidth * 0.75;
+                        for (let i = 0; i < images.length; i++) {
+                            if (i > 0 && i % 2 === 0) {
+                                finalY += imgHeight + 5;
+                                xPos = margin;
+                            }
+                            finalY = checkPageBreak(finalY);
+                            doc.addImage(images[i], 'JPEG', xPos, finalY, imgWidth, imgHeight);
+                            xPos += imgWidth + 5;
+                        }
+                        finalY += imgHeight + 5;
+                    }
+                }
+
+                finalY = checkPageBreak(finalY + 20);
+                addSectionTitle("Assinaturas");
+
+                doc.text("________________________________________", pageWidth / 2, finalY, { align: 'center' });
+                finalY += 5;
+                doc.setFontSize(9).setFont('helvetica', 'normal');
+                doc.text(config.respTecnico || 'Responsável Técnico', pageWidth / 2, finalY, { align: 'center' });
+                finalY += 15;
+
+                if (Array.isArray(config.analistas) && config.analistas.length > 0) {
+                    finalY = checkPageBreak(finalY);
+                    config.analistas.forEach(analista => {
+                        finalY = checkPageBreak(finalY + 15);
+                        doc.text("________________________________________", pageWidth / 2, finalY, { align: 'center' });
+                        finalY += 5;
+                        doc.text(analista, pageWidth / 2, finalY, { align: 'center' });
+                        finalY += 10;
+                    });
+                }
+
+                addFooter();
+                return doc.output('blob');
+            }
+
+            // --- PDF GENERATION (UI WRAPPERS) ---
+            async function gerarLaudoPDF(tipo, index, nomeFiltro) {
+                const button = document.getElementById(`pdf-button-${tipo.toLowerCase()}-${index}`);
+                const originalText = button.innerHTML;
+                button.innerHTML = '<span class="loading-spinner"></span> Gerando...';
+                button.disabled = true;
+
+                try {
+                    const pdfBlob = await criarDocumentoPDF(tipo, index, nomeFiltro);
+                    const url = URL.createObjectURL(pdfBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `Laudo_${nomeFiltro.replace(/ /g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error("Erro ao gerar PDF:", error);
+                    showNotification('error', 'Erro ao gerar o laudo PDF.');
+                } finally {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }
+            }
+
+            async function gerarTodosOsLaudos() {
+                if (!isConfigured) {
+                    showNotification('error', 'Salve a configuração antes de gerar os laudos.');
+                    return;
+                }
+                const button = document.getElementById('btn-gerar-todos-laudos');
+                const originalText = button.innerHTML;
+                button.disabled = true;
+
+                const todosFiltros = [
+                    ...config.ascendente.map((nome, i) => ({ tipo: 'Asc', index: i, nome })),
+                    ...config.descendente.map((nome, i) => ({ tipo: 'Desc', index: i, nome }))
+                ];
+
+                if (todosFiltros.length === 0) {
+                    showNotification('info', 'Nenhum filtro configurado.');
+                    button.disabled = false;
+                    return;
+                }
+
+                const zip = new JSZip();
+
+                try {
+                    for (let i = 0; i < todosFiltros.length; i++) {
+                        const filtro = todosFiltros[i];
+                        button.innerHTML = `<span class="loading-spinner"></span> Gerando ${i + 1} de ${todosFiltros.length}...`;
+                        const pdfBlob = await criarDocumentoPDF(filtro.tipo, filtro.index, filtro.nome);
+                        const fileName = `Laudo_${filtro.nome.replace(/ /g, '_')}.pdf`;
+                        zip.file(fileName, pdfBlob);
+                    }
+
+                    button.innerHTML = `<span class="loading-spinner"></span> Compactando...`;
+                    const zipBlob = await zip.generateAsync({ type: "blob" });
+
+                    const url = URL.createObjectURL(zipBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    const etaNome = (config.eta || 'ETA').replace(/\s+/g, '_');
+                    link.download = `Laudos_${etaNome}_${new Date().toISOString().slice(0, 10)}.zip`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+
+                    showNotification('success', `${todosFiltros.length} laudos foram gerados e compactados.`);
+                } catch (error) {
+                    console.error("Erro ao gerar múltiplos laudos:", error);
+                    showNotification('error', 'Ocorreu um erro ao gerar os laudos.');
+                } finally {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }
+            }
+
+            // --- COMPARISON TOOL FUNCTIONS ---
+            async function handleComparisonFileUpload(event) {
+                const files = event.target.files;
+                if (!files || files.length < 2) {
+                    showNotification('error', 'Por favor, selecione 2 ou mais arquivos de backup.');
+                    return;
+                }
+
+                loadedBackups = [];
+                const fileListDiv = document.getElementById('loaded-files-list');
+                fileListDiv.innerHTML = 'Carregando arquivos...';
+
+                const fileReadPromises = Array.from(files).map(file => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = e => {
+                            try {
+                                const data = JSON.parse(e.target.result);
+                                if (!data.config || !data.filtros) {
+                                    reject(new Error(`Arquivo inválido: ${file.name}`));
+                                }
+                                resolve(data);
+                            } catch (err) {
+                                reject(err);
+                            }
+                        };
+                        reader.onerror = reject;
+                        reader.readAsText(file);
+                    });
+                });
+
+                try {
+                    loadedBackups = await Promise.all(fileReadPromises);
+                    loadedBackups.sort((a, b) => new Date(a.config.dataAnalise) - new Date(b.config.dataAnalise));
+
+                    fileListDiv.innerHTML = `<b>Arquivos Carregados:</b> ${loadedBackups.map(b => b.config.dataAnalise).join(', ')}`;
+                    populateFilterSelector();
+                    document.getElementById('comparacao-controls').classList.remove('hidden');
+                } catch (error) {
+                    showNotification('error', `Erro ao carregar backups: ${error.message}`);
+                    fileListDiv.innerHTML = '';
+                }
+            }
+
+            function populateFilterSelector() {
+                const select = document.getElementById('filtro-comparacao-select');
+                select.innerHTML = '<option value="">Selecione um filtro...</option>';
+
+                if (loadedBackups.length === 0) return;
+
+                const firstBackup = loadedBackups[0];
+                const filters = [
+                    ...firstBackup.config.ascendente.map((nome, i) => ({ id: `asc_${i}`, nome })),
+                    ...firstBackup.config.descendente.map((nome, i) => ({ id: `desc_${i}`, nome }))
+                ];
+
+                filters.forEach(filtro => {
+                    const option = document.createElement('option');
+                    option.value = filtro.id;
+                    option.textContent = filtro.nome;
+                    select.appendChild(option);
+                });
+            }
+
+            function displayComparison() {
+                const selectedFilterId = document.getElementById('filtro-comparacao-select').value;
+                const resultsDiv = document.getElementById('comparacao-results');
+                if (!selectedFilterId) {
+                    resultsDiv.classList.add('hidden');
+                    return;
+                }
+
+                const comparisonData = [];
+                loadedBackups.forEach(backup => {
+                    const filterData = backup.filtros.find(f => f.id === selectedFilterId);
+                    if (filterData) {
+                        const dist = parseFloat(filterData.distancia);
+                        let somaVel = 0, countVel = 0;
+                        filterData.velocidade.forEach(t => {
+                            const tempo = parseFloat(t);
+                            if (!isNaN(dist) && !isNaN(tempo) && tempo > 0) {
+                                somaVel += (dist / tempo) * 60;
+                                countVel++;
+                            }
+                        });
+                        const mediaVel = countVel > 0 ? (somaVel / countVel) : 0;
+
+                        const turbidezValues = filterData.turbidez.map(v => parseFloat(v)).filter(v => !isNaN(v));
+                        const maxTurb = turbidezValues.length > 0 ? Math.max(...turbidezValues) : 0;
+
+                        comparisonData.push({
+                            date: backup.config.dataAnalise,
+                            avgVelocity: mediaVel,
+                            maxTurbidity: maxTurb
+                        });
+                    }
+                });
+
+                renderComparisonTable(comparisonData);
+                renderComparisonChart(comparisonData);
+                resultsDiv.classList.remove('hidden');
+            }
+
+            function renderComparisonTable(data) {
+                const container = document.getElementById('tabela-comparacao-container');
+                let tableHTML = `
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3">Data da Análise</th>
+                                    <th class="px-4 py-3">Velocidade Média (cm/min)</th>
+                                    <th class="px-4 py-3">Turbidez Máxima (NTU)</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+                data.forEach(item => {
+                    tableHTML += `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-2 font-medium">${new Date(item.date + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                            <td class="px-4 py-2">${item.avgVelocity.toFixed(2)}</td>
+                            <td class="px-4 py-2">${item.maxTurbidity.toFixed(2)}</td>
+                        </tr>`;
+                });
+                tableHTML += `</tbody></table></div>`;
+                container.innerHTML = tableHTML;
+            }
+
+            function renderComparisonChart(data) {
+                const ctx = document.getElementById('grafico-comparacao').getContext('2d');
+                if (comparisonChart) {
+                    comparisonChart.destroy();
+                }
+                comparisonChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.map(d => new Date(d.date + 'T00:00:00').toLocaleDateString('pt-BR')),
+                        datasets: [
+                            {
+                                label: 'Velocidade Média',
+                                data: data.map(d => d.avgVelocity),
+                                borderColor: 'rgba(59, 130, 246, 1)',
+                                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                yAxisID: 'yVelocity',
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Turbidez Máxima',
+                                data: data.map(d => d.maxTurbidity),
+                                borderColor: 'rgba(239, 68, 68, 1)',
+                                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                                yAxisID: 'yTurbidity',
+                                tension: 0.1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            yVelocity: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: { display: true, text: 'Velocidade (cm/min)' }
+                            },
+                            yTurbidity: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: { display: true, text: 'Turbidez (NTU)' },
+                                grid: { drawOnChartArea: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            async function gerarLaudoComparativoPDF() {
+                const selectedFilterId = document.getElementById('filtro-comparacao-select').value;
+                const selectedFilterName = document.getElementById('filtro-comparacao-select').options[document.getElementById('filtro-comparacao-select').selectedIndex].text;
+                if (!selectedFilterId) return;
+
+                const button = document.getElementById('btn-gerar-laudo-comparativo');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<span class="loading-spinner"></span> Gerando...';
+                button.disabled = true;
+
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+
+                    doc.setFontSize(18).text(`Relatório Comparativo: ${selectedFilterName}`, 15, 20);
+
+                    const chartCanvas = document.getElementById('grafico-comparacao');
+                    const chartImage = chartCanvas.toDataURL('image/png', 1.0);
+
+                    doc.addImage(chartImage, 'PNG', 15, 30, 180, 90);
+
+                    const tableData = loadedBackups.map(backup => {
+                        const filterData = backup.filtros.find(f => f.id === selectedFilterId);
+                        if (!filterData) return null;
+
+                        const dist = parseFloat(filterData.distancia);
+                        let somaVel = 0, countVel = 0;
+                        filterData.velocidade.forEach(t => {
+                            const tempo = parseFloat(t);
+                            if (!isNaN(dist) && !isNaN(tempo) && tempo > 0) {
+                                somaVel += (dist / tempo) * 60;
+                                countVel++;
+                            }
+                        });
+                        const mediaVel = countVel > 0 ? (somaVel / countVel).toFixed(2) : 'N/A';
+
+                        const turbidezValues = filterData.turbidez.map(v => parseFloat(v)).filter(v => !isNaN(v));
+                        const maxTurb = turbidezValues.length > 0 ? Math.max(...turbidezValues).toFixed(2) : 'N/A';
+
+                        return [
+                            new Date(backup.config.dataAnalise + 'T00:00:00').toLocaleDateString('pt-BR'),
+                            mediaVel,
+                            maxTurb
+                        ];
+                    }).filter(Boolean);
+
+                    doc.autoTable({
+                        startY: 130,
+                        head: [['Data da Análise', 'Velocidade Média (cm/min)', 'Turbidez Máxima (NTU)']],
+                        body: tableData,
+                    });
+
+                    doc.save(`Comparativo_${selectedFilterName.replace(/ /g, '_')}.pdf`);
+
+                } catch (e) {
+                    showNotification('error', 'Erro ao gerar PDF comparativo.');
+                    console.error(e);
+                } finally {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }
+            }
+
+
+            // --- UTILITIES ---
+            function showNotification(type, message) {
+                const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-blue-500' };
+                const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+                const notification = document.createElement('div');
+                notification.className = `fixed bottom-4 right-4 text-white px-4 py-3 rounded-md shadow-lg flex items-center animate-fade-in ${colors[type]}`;
+                notification.innerHTML = `<i class="fas ${icons[type]} mr-2"></i><span>${message}</span>`;
+                document.body.appendChild(notification);
+                setTimeout(() => {
+                    notification.classList.remove('animate-fade-in');
+                    notification.classList.add('animate-fade-out');
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+
+        })();
+    </script>
+</body>
+
+</html>
