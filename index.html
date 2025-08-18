@@ -833,6 +833,16 @@
             }
 
             // --- DATA PERSISTENCE (LOCALSTORAGE) ---
+
+            // ATUALIZAÇÃO: Nova função para ler os dados gerais do formulário e atualizar o objeto 'config'
+            function atualizarConfigGeralDoForm() {
+                config.eta = document.getElementById('nomeEta').value;
+                config.distrito = document.getElementById('distrito').value;
+                config.respTecnico = document.getElementById('respTecnico').value;
+                config.analistas = Array.from(document.querySelectorAll('.tecnico-analise')).map(input => input.value).filter(Boolean);
+                config.dataAnalise = document.getElementById('dataAnalise').value;
+            }
+
             function salvarConfiguracao() {
                 const button = document.getElementById('btn-salvar-config');
                 const originalText = button.innerHTML;
@@ -840,11 +850,8 @@
                 button.disabled = true;
 
                 setTimeout(() => {
-                    config.eta = document.getElementById('nomeEta').value;
-                    config.distrito = document.getElementById('distrito').value;
-                    config.respTecnico = document.getElementById('respTecnico').value;
-                    config.analistas = Array.from(document.querySelectorAll('.tecnico-analise')).map(input => input.value).filter(Boolean);
-                    config.dataAnalise = document.getElementById('dataAnalise').value;
+                    // ATUALIZAÇÃO: Usa a nova função para garantir que todos os dados gerais estão sincronizados
+                    atualizarConfigGeralDoForm();
 
                     config.ascendente = Array.from({ length: parseInt(document.getElementById('qtdAscendente').value) || 0 }, (_, i) => document.getElementById(`nome_Ascendente_${i}`).value);
                     config.descendente = Array.from({ length: parseInt(document.getElementById('qtdDescendente').value) || 0 }, (_, i) => document.getElementById(`nome_Descendente_${i}`).value);
@@ -904,7 +911,10 @@
                 document.getElementById('nomeEta').value = config.eta || '';
                 document.getElementById('distrito').value = config.distrito || '';
                 document.getElementById('respTecnico').value = config.respTecnico || '';
+
                 document.getElementById('dataAnalise').value = config.dataAnalise || new Date().toISOString().slice(0, 10);
+
+                config.dataAnalise = document.getElementById('dataAnalise').value;
 
                 document.getElementById('tecnicosContainer').innerHTML = '';
                 (config.analistas || []).forEach(nome => adicionarTecnico(false, nome));
@@ -927,8 +937,11 @@
                 gerarEstruturaPaineis(dados.filtros);
             }
 
+
             // --- IMPORT/EXPORT ---
             function exportarJSON() {
+                // ATUALIZAÇÃO: Garante que os dados do form sejam lidos antes de salvar e exportar
+                atualizarConfigGeralDoForm();
                 salvarTodosDados();
                 const dados = carregarDadosDoLocalStorage();
                 if (!dados) {
@@ -981,6 +994,9 @@
 
             // --- PDF GENERATION (CORE LOGIC) ---
             async function criarDocumentoPDF(tipo, index, nomeFiltro) {
+                // ATUALIZAÇÃO: Garante que os dados do form sejam lidos antes de criar o PDF
+                atualizarConfigGeralDoForm();
+
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
                 const tipoLower = tipo.toLowerCase();
@@ -1050,6 +1066,7 @@
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(100, 100, 100);
+
                 doc.text(`Data da Análise: ${config.dataAnalise ? new Date(config.dataAnalise + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não informada'}`, margin, finalY);
                 finalY += 5;
 
@@ -1465,11 +1482,11 @@
                             <tbody>`;
                 data.forEach(item => {
                     tableHTML += `
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="px-4 py-2 font-medium">${new Date(item.date + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
-                            <td class="px-4 py-2">${item.avgVelocity.toFixed(2)}</td>
-                            <td class="px-4 py-2">${item.maxTurbidity.toFixed(2)}</td>
-                        </tr>`;
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2 font-medium">${new Date(item.date + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                                    <td class="px-4 py-2">${item.avgVelocity.toFixed(2)}</td>
+                                    <td class="px-4 py-2">${item.maxTurbidity.toFixed(2)}</td>
+                                </tr>`;
                 });
                 tableHTML += `</tbody></table></div>`;
                 container.innerHTML = tableHTML;
