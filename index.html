@@ -962,10 +962,12 @@
                 const url = URL.createObjectURL(blob);
                 link.href = url;
 
-                const date = (config.dataAnalise || new Date().toISOString().slice(0, 10));
+                const now = new Date();
+                const date = config.dataAnalise || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                const time = `${String(now.getHours()).padStart(2, '0')}h${String(now.getMinutes()).padStart(2, '0')}`;
                 const etaNome = (config.eta || 'ETA').replace(/\s+/g, '_');
 
-                link.download = `backup_${etaNome}_${date}.json`;
+                link.download = `backup_${etaNome}_${date}_${time}.json`;
 
                 document.body.appendChild(link);
                 link.click();
@@ -1301,7 +1303,12 @@
                     const url = URL.createObjectURL(pdfBlob);
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = `Laudo_${nomeFiltro.replace(/ /g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+                    const now = new Date();
+                    const date = config.dataAnalise || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                    const time = `${String(now.getHours()).padStart(2, '0')}h${String(now.getMinutes()).padStart(2, '0')}`;
+
+                    link.download = `Laudo_${nomeFiltro.replace(/ /g, '_')}_${date}_${time}.pdf`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -1353,7 +1360,12 @@
                     const link = document.createElement('a');
                     link.href = url;
                     const etaNome = (config.eta || 'ETA').replace(/\s+/g, '_');
-                    link.download = `Laudos_${etaNome}_${new Date().toISOString().slice(0, 10)}.zip`;
+
+                    const now = new Date();
+                    const date = config.dataAnalise || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                    const time = `${String(now.getHours()).padStart(2, '0')}h${String(now.getMinutes()).padStart(2, '0')}`;
+
+                    link.download = `Laudos_${etaNome}_${date}_${time}.zip`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
