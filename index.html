@@ -355,7 +355,9 @@
             // --- INITIALIZATION ---
             document.addEventListener('DOMContentLoaded', () => {
                 initializeEventListeners();
-                document.getElementById('dataAnalise').valueAsDate = new Date();
+                const dataInput = document.getElementById('dataAnalise');
+                dataInput.valueAsDate = new Date();
+                config.dataAnalise = dataInput.value; // Initialize config with current date
                 adicionarTecnico(false, "");
                 gerarCamposNomes('Ascendente');
                 gerarCamposNomes('Descendente');
@@ -378,6 +380,19 @@
                 document.getElementById('import-comparacao-input').addEventListener('change', handleComparisonFileUpload);
                 document.getElementById('filtro-comparacao-select').addEventListener('change', displayComparison);
                 document.getElementById('btn-gerar-laudo-comparativo').addEventListener('click', gerarLaudoComparativoPDF);
+
+                // ATUALIZAÇÃO: Adiciona listeners para atualizar o objeto 'config' em tempo real
+                document.getElementById('nomeEta').addEventListener('input', e => config.eta = e.target.value);
+                document.getElementById('distrito').addEventListener('input', e => config.distrito = e.target.value);
+                document.getElementById('respTecnico').addEventListener('input', e => config.respTecnico = e.target.value);
+                document.getElementById('dataAnalise').addEventListener('input', e => config.dataAnalise = e.target.value);
+
+                // Event delegation for dynamically added analysts
+                document.getElementById('tecnicosContainer').addEventListener('input', e => {
+                    if (e.target.classList.contains('tecnico-analise')) {
+                        config.analistas = Array.from(document.querySelectorAll('.tecnico-analise')).map(input => input.value).filter(Boolean);
+                    }
+                });
             }
 
             // --- TAB MANAGEMENT ---
@@ -437,7 +452,11 @@
                         <i class="fas fa-trash-alt"></i>
                     </button>
                 `;
-                div.querySelector('button').addEventListener('click', function () { this.parentElement.remove(); });
+                div.querySelector('button').addEventListener('click', function () {
+                    this.parentElement.remove();
+                    // Update config when an analyst is removed
+                    config.analistas = Array.from(document.querySelectorAll('.tecnico-analise')).map(input => input.value).filter(Boolean);
+                });
                 container.appendChild(div);
             }
 
@@ -833,16 +852,6 @@
             }
 
             // --- DATA PERSISTENCE (LOCALSTORAGE) ---
-
-            // ATUALIZAÇÃO: Nova função para ler os dados gerais do formulário e atualizar o objeto 'config'
-            function atualizarConfigGeralDoForm() {
-                config.eta = document.getElementById('nomeEta').value;
-                config.distrito = document.getElementById('distrito').value;
-                config.respTecnico = document.getElementById('respTecnico').value;
-                config.analistas = Array.from(document.querySelectorAll('.tecnico-analise')).map(input => input.value).filter(Boolean);
-                config.dataAnalise = document.getElementById('dataAnalise').value;
-            }
-
             function salvarConfiguracao() {
                 const button = document.getElementById('btn-salvar-config');
                 const originalText = button.innerHTML;
@@ -850,9 +859,8 @@
                 button.disabled = true;
 
                 setTimeout(() => {
-                    // ATUALIZAÇÃO: Usa a nova função para garantir que todos os dados gerais estão sincronizados
-                    atualizarConfigGeralDoForm();
-
+                    // Os dados gerais já estão atualizados no objeto 'config' pelos event listeners
+                    // Apenas lemos os dados dinâmicos dos filtros aqui
                     config.ascendente = Array.from({ length: parseInt(document.getElementById('qtdAscendente').value) || 0 }, (_, i) => document.getElementById(`nome_Ascendente_${i}`).value);
                     config.descendente = Array.from({ length: parseInt(document.getElementById('qtdDescendente').value) || 0 }, (_, i) => document.getElementById(`nome_Descendente_${i}`).value);
 
@@ -940,8 +948,7 @@
 
             // --- IMPORT/EXPORT ---
             function exportarJSON() {
-                // ATUALIZAÇÃO: Garante que os dados do form sejam lidos antes de salvar e exportar
-                atualizarConfigGeralDoForm();
+                // O objeto 'config' já está atualizado, então apenas salvamos
                 salvarTodosDados();
                 const dados = carregarDadosDoLocalStorage();
                 if (!dados) {
@@ -994,9 +1001,7 @@
 
             // --- PDF GENERATION (CORE LOGIC) ---
             async function criarDocumentoPDF(tipo, index, nomeFiltro) {
-                // ATUALIZAÇÃO: Garante que os dados do form sejam lidos antes de criar o PDF
-                atualizarConfigGeralDoForm();
-
+                // O objeto 'config' já está atualizado, então podemos usá-lo diretamente
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
                 const tipoLower = tipo.toLowerCase();
