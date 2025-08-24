@@ -579,6 +579,7 @@
 
 
         let isLoginMode = true;
+        let appInitialized = false; // Flag to prevent re-initialization
 
         // --- FIREBASE AUTHENTICATION FUNCTIONS ---
 
@@ -669,15 +670,20 @@
             if (user) {
                 console.log('User is logged in:', user);
                 // Hide login form and show main app
-                loginContainer.classList.add('hidden');
-                mainAppContainer.classList.remove('hidden');
-                // Initialize the main app logic
-                initializeAppLogic();
+                loginContainer.style.display = 'none';
+                mainAppContainer.style.display = 'block';
+
+                // Initialize the main app logic only once
+                if (!appInitialized) {
+                    initializeAppLogic();
+                    appInitialized = true;
+                }
             } else {
                 console.log('No user logged in.');
                 // Show login form and hide main app
-                loginContainer.classList.remove('hidden');
-                mainAppContainer.classList.add('hidden');
+                loginContainer.style.display = 'flex';
+                mainAppContainer.style.display = 'none';
+                appInitialized = false; // Reset on logout
             }
         });
 
@@ -1592,7 +1598,7 @@
 
                     doc.setFontSize(9).setFont('helvetica', 'normal').setTextColor(80, 80, 80);
                     let parecerText = `O filtro foi considerado ${isAprovado ? 'APROVADO' : 'REPROVADO'} nos testes de avaliação. `;
-                    parecerText += `A velocidade média de lavagem foi de ${mediaVel.toFixed(2)} cm/min (Padrão: ${ABNT_STANDARDS.VELOCIDADE_MIN}-${ABNT_STANDARDS.VELOCidade_MAX} cm/min). `;
+                    parecerText += `A velocidade média de lavagem foi de ${mediaVel.toFixed(2)} cm/min (Padrão: ${ABNT_STANDARDS.VELOCIDADE_MIN}-${ABNT_STANDARDS.VELOCIDADE_MAX} cm/min). `;
                     if (!isNaN(turbidezMaxMedida) && isFinite(turbidezMaxMedida)) {
                         parecerText += `O valor máximo de turbidez registrado foi de ${turbidezMaxMedida.toFixed(2)} NTU (Padrão: máx ${ABNT_STANDARDS.TURBIDEZ_MAX} NTU).`;
                     } else {
